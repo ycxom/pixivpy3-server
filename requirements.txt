@@ -1,4 +1,7 @@
-flask>=2.0.0
+flask>=3.0.0
 pixivpy3>=3.7.0
 pyyaml>=6.0
-gppt>=1.0.0
+gppt>=4.0.0
+requests>=2.32.0
+selenium>=4.0.0
+playwright>=1.50.0
