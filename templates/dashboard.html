@@ -2,10 +2,11 @@
 {% block content %}
 <div class="container">
     <div class="header">
-        <h1>Pixiv API Manager</h1>
+        <h1 data-i18n="title">Pixiv API Manager</h1>
         <div>
-            <button class="btn btn-primary" onclick="openAddModal()">+ Add Account</button>
-            <a href="{{ url_for('ui.logout') }}" class="btn btn-danger" style="margin-left: 10px;">Logout</a>
+            <button id="lang-btn" class="btn" onclick="toggleLang()" style="margin-right: 10px;">中文</button>
+            <button class="btn btn-primary" onclick="openAddModal()" data-i18n="add_account">+ Add Account</button>
+            <a href="{{ url_for('ui.logout') }}" class="btn btn-danger" style="margin-left: 10px;" data-i18n="logout">Logout</a>
         </div>
     </div>
 
@@ -14,46 +15,70 @@
     <div class="stats">
         <div class="stat-card">
             <div class="stat-value" id="total-accounts">{{ total }}</div>
-            <div class="stat-label">Total Accounts</div>
+            <div class="stat-label" data-i18n="total_accounts">Total Accounts</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="active-accounts">{{ accounts|selectattr('authenticated')|list|length }}</div>
-            <div class="stat-label">Active</div>
+            <div class="stat-label" data-i18n="active">Active</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="total-requests">{{ accounts|sum(attribute='request_count') }}</div>
-            <div class="stat-label">Total Requests</div>
+            <div class="stat-label" data-i18n="total_requests">Total Requests</div>
         </div>
     </div>
 
     <div class="card" style="margin-bottom: 20px;">
-        <div class="card-title">Proxy Settings</div>
+        <div class="card-title" data-i18n="proxy_settings">Proxy Settings</div>
         <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 200px;">
-                <label style="color: #888; font-size: 12px;">HTTP/HTTPS Proxy</label>
+                <label style="color: #888; font-size: 12px;" data-i18n="http_proxy">HTTP/HTTPS Proxy</label>
                 <input type="text" id="proxy-url" placeholder="http://127.0.0.1:7890" style="margin-bottom: 0;">
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <label style="display: flex; align-items: center; gap: 5px; color: #888;">
                     <input type="checkbox" id="proxy-enabled" style="width: auto;">
-                    Enable
+                    <span data-i18n="enable">Enable</span>
                 </label>
-                <button class="btn btn-primary btn-sm" onclick="saveProxy()">Save & Apply</button>
+                <button class="btn btn-primary btn-sm" onclick="saveProxy()" data-i18n="save_apply">Save & Apply</button>
             </div>
             <div id="proxy-status" style="color: #888; font-size: 12px;"></div>
         </div>
     </div>
 
+    <!-- API Keys Section -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="card-title" style="margin-bottom: 0;" data-i18n="api_keys">API Keys</div>
+            <button class="btn btn-primary btn-sm" onclick="openKeyModal()" data-i18n="add_key">+ Add Key</button>
+        </div>
+        <table class="table" id="keys-table">
+            <thead>
+                <tr>
+                    <th data-i18n="key_name">Key Name</th>
+                    <th data-i18n="key_value">Key Value</th>
+                    <th data-i18n="access_mode">Access Mode</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="keys-tbody"></tbody>
+        </table>
+        <div id="no-keys" style="text-align: center; padding: 30px; color: #888; display: none;">
+            <p data-i18n="no_keys">No API keys configured</p>
+            <p style="font-size: 12px; margin-top: 5px;" data-i18n="create_first_key">Create your first API key to get started</p>
+        </div>
+    </div>
+
     <div class="card">
-        <div class="card-title">Account Pool</div>
+        <div class="card-title" data-i18n="account_pool">Account Pool</div>
         <table class="table">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Requests</th>
-                    <th>Last Request</th>
-                    <th>Actions</th>
+                    <th data-i18n="name">Name</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="requests">Requests</th>
+                    <th data-i18n="last_request">Last Request</th>
+                    <th data-i18n="actions">Actions</th>
                 </tr>
             </thead>
             <tbody id="accounts-table">
@@ -64,8 +89,8 @@
                     <td>{{ acc.request_count }}</td>
                     <td>{{ acc.last_request|int if acc.last_request else '-' }}</td>
                     <td>
-                        <button class="btn btn-success btn-sm" onclick="refreshAccount('{{ acc.name }}')">Refresh</button>
-                        <button class="btn btn-danger btn-sm" onclick="removeAccount('{{ acc.name }}')">Remove</button>
+                        <button class="btn btn-success btn-sm" onclick="refreshAccount('{{ acc.name }}')" data-i18n="refresh">Refresh</button>
+                        <button class="btn btn-danger btn-sm" onclick="removeAccount('{{ acc.name }}')" data-i18n="remove">Remove</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -74,26 +99,25 @@
     </div>
 </div>
 
-
 <!-- Add Account Modal -->
 <div class="modal" id="addModal">
     <div class="modal-content">
-        <div class="modal-title">Add Account</div>
+        <div class="modal-title" data-i18n="add_account">Add Account</div>
         <form id="addForm">
             <div class="form-group">
-                <label>Account Name (optional)</label>
+                <label data-i18n="account_name">Account Name (optional)</label>
                 <input type="text" name="name" id="add-name" placeholder="account_name">
             </div>
             <div class="form-group">
-                <label>Auth Method</label>
+                <label data-i18n="auth_method">Auth Method</label>
                 <select id="auth-method" onchange="toggleAuthFields()">
-                    <option value="token">Refresh Token</option>
-                    <option value="gppt">Pixiv Login (GPPT)</option>
+                    <option value="token" data-i18n="refresh_token">Refresh Token</option>
+                    <option value="gppt" data-i18n="pixiv_login">Pixiv Login (GPPT)</option>
                 </select>
             </div>
             <div id="token-fields">
                 <div class="form-group">
-                    <label>Refresh Token</label>
+                    <label data-i18n="refresh_token">Refresh Token</label>
                     <input type="text" name="refresh_token" id="add-token" placeholder="your_refresh_token">
                 </div>
             </div>
@@ -105,18 +129,72 @@
                 </div>
             </div>
             <div class="actions">
-                <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="add-btn">Add</button>
+                <button type="button" class="btn" onclick="closeAddModal()" data-i18n="cancel">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="add-btn" data-i18n="add">Add</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- API Key Modal -->
+<div class="modal" id="keyModal">
+    <div class="modal-content">
+        <div class="modal-title" id="key-modal-title" data-i18n="add_key">Add Key</div>
+        <form id="keyForm">
+            <input type="hidden" id="key-edit-name">
+            <div class="form-group">
+                <label data-i18n="key_name">Key Name</label>
+                <input type="text" id="key-name" placeholder="my_api_key" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="access_mode">Access Mode</label>
+                <select id="key-access-mode" onchange="toggleEndpointFields()">
+                    <option value="blacklist" data-i18n="blacklist">Blacklist</option>
+                    <option value="whitelist" data-i18n="whitelist">Whitelist</option>
+                </select>
+            </div>
+            <div id="whitelist-fields" style="display: none;">
+                <div class="form-group">
+                    <label data-i18n="allowed_endpoints">Allowed Endpoints</label>
+                    <div id="allowed-endpoints" class="endpoint-checkboxes"></div>
+                </div>
+            </div>
+            <div id="blacklist-fields">
+                <div class="form-group">
+                    <label data-i18n="denied_endpoints">Denied Endpoints</label>
+                    <div id="denied-endpoints" class="endpoint-checkboxes"></div>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn" onclick="closeKeyModal()" data-i18n="cancel">Cancel</button>
+                <button type="submit" class="btn btn-primary" data-i18n="save">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.endpoint-checkboxes { max-height: 200px; overflow-y: auto; background: #0f0f23; padding: 10px; border-radius: 6px; }
+.endpoint-checkboxes label { display: block; padding: 5px 0; color: #ccc; cursor: pointer; }
+.endpoint-checkboxes label:hover { color: #0096fa; }
+.endpoint-checkboxes input { margin-right: 8px; }
+.key-value { font-family: monospace; background: #0f0f23; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+</style>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
 const AUTH_TOKEN = "{{ config.auth_token }}";
+const ENDPOINTS = [
+    '/api/illust/<id>',
+    '/api/search',
+    '/api/ranking',
+    '/api/recommended',
+    '/api/download',
+    '/api/user/<id>',
+    '/api/user/<id>/illusts'
+];
 
 function showAlert(msg, type) {
     const container = document.getElementById('alert-container');
@@ -135,6 +213,7 @@ function apiCall(url, method, data) {
     }).then(r => r.json());
 }
 
+// Account functions
 function openAddModal() {
     document.getElementById('addModal').classList.add('active');
 }
@@ -148,7 +227,7 @@ function toggleAuthFields() {
     const method = document.getElementById('auth-method').value;
     document.getElementById('token-fields').style.display = method === 'token' ? 'block' : 'none';
     document.getElementById('gppt-fields').style.display = method === 'gppt' ? 'block' : 'none';
-    document.getElementById('add-btn').textContent = method === 'gppt' ? 'Login with Pixiv' : 'Add';
+    document.getElementById('add-btn').textContent = method === 'gppt' ? t('login_with_pixiv') : t('add');
 }
 
 document.getElementById('addForm').onsubmit = async (e) => {
@@ -166,10 +245,9 @@ document.getElementById('addForm').onsubmit = async (e) => {
         }
         data = { name, refresh_token: token };
     } else {
-        // GPPT 交互式登录 - 打开浏览器让用户登录
         url = '/api/pool/login';
         data = { name };
-        showAlert('Opening Pixiv login page... Please login in the browser window', 'success');
+        showAlert('Opening Pixiv login page...', 'success');
     }
     
     const res = await apiCall(url, 'POST', data);
@@ -193,7 +271,7 @@ async function refreshAccount(name) {
 }
 
 async function removeAccount(name) {
-    if (!confirm(`Remove account "${name}"?`)) return;
+    if (!confirm(t('confirm_delete_account') + ` "${name}"?`)) return;
     const res = await apiCall('/api/pool/remove', 'POST', { name });
     if (res.success) {
         showAlert(`Account ${name} removed`, 'success');
@@ -208,28 +286,157 @@ async function loadProxyStatus() {
     const res = await apiCall('/api/proxy/status', 'GET');
     document.getElementById('proxy-enabled').checked = res.enabled;
     document.getElementById('proxy-url').value = res.http || '';
-    document.getElementById('proxy-status').textContent = res.enabled ? '✓ Proxy enabled' : '○ Proxy disabled';
+    document.getElementById('proxy-status').textContent = res.enabled ? t('proxy_enabled') : t('proxy_disabled');
 }
 
 async function saveProxy() {
     const enabled = document.getElementById('proxy-enabled').checked;
     const url = document.getElementById('proxy-url').value;
     
-    const res = await apiCall('/api/proxy/set', 'POST', {
-        enabled: enabled,
-        http: url,
-        https: url
-    });
+    const res = await apiCall('/api/proxy/set', 'POST', { enabled, http: url, https: url });
     
     if (res.success) {
-        document.getElementById('proxy-status').textContent = res.enabled ? '✓ Proxy enabled' : '○ Proxy disabled';
+        document.getElementById('proxy-status').textContent = res.enabled ? t('proxy_enabled') : t('proxy_disabled');
         showAlert('Proxy settings updated', 'success');
     } else {
         showAlert(res.error || 'Failed to update proxy', 'error');
     }
 }
 
-// Load proxy status on page load
+// API Key functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderEndpointCheckboxes(containerId, selected = []) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = ENDPOINTS.map(ep => `
+        <label>
+            <input type="checkbox" value="${ep}" ${selected.includes(ep) ? 'checked' : ''}>
+            ${escapeHtml(ep)}
+        </label>
+    `).join('');
+}
+
+function getSelectedEndpoints(containerId) {
+    const container = document.getElementById(containerId);
+    return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+}
+
+function toggleEndpointFields() {
+    const mode = document.getElementById('key-access-mode').value;
+    document.getElementById('whitelist-fields').style.display = mode === 'whitelist' ? 'block' : 'none';
+    document.getElementById('blacklist-fields').style.display = mode === 'blacklist' ? 'block' : 'none';
+}
+
+function openKeyModal(editKey = null) {
+    renderEndpointCheckboxes('allowed-endpoints', editKey?.allowed_endpoints || []);
+    renderEndpointCheckboxes('denied-endpoints', editKey?.denied_endpoints || []);
+    
+    if (editKey) {
+        document.getElementById('key-modal-title').textContent = t('edit_key');
+        document.getElementById('key-edit-name').value = editKey.name;
+        document.getElementById('key-name').value = editKey.name;
+        document.getElementById('key-name').disabled = true;
+        document.getElementById('key-access-mode').value = editKey.access_mode;
+    } else {
+        document.getElementById('key-modal-title').textContent = t('add_key');
+        document.getElementById('key-edit-name').value = '';
+        document.getElementById('key-name').value = '';
+        document.getElementById('key-name').disabled = false;
+        document.getElementById('key-access-mode').value = 'blacklist';
+    }
+    
+    toggleEndpointFields();
+    document.getElementById('keyModal').classList.add('active');
+}
+
+function closeKeyModal() {
+    document.getElementById('keyModal').classList.remove('active');
+    document.getElementById('keyForm').reset();
+}
+
+document.getElementById('keyForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const editName = document.getElementById('key-edit-name').value;
+    const name = document.getElementById('key-name').value;
+    const accessMode = document.getElementById('key-access-mode').value;
+    const allowedEndpoints = getSelectedEndpoints('allowed-endpoints');
+    const deniedEndpoints = getSelectedEndpoints('denied-endpoints');
+    
+    const data = {
+        name,
+        access_mode: accessMode,
+        allowed_endpoints: allowedEndpoints,
+        denied_endpoints: deniedEndpoints
+    };
+    
+    let res;
+    if (editName) {
+        res = await apiCall(`/api/keys/${editName}`, 'PUT', data);
+    } else {
+        res = await apiCall('/api/keys', 'POST', data);
+    }
+    
+    if (res.success) {
+        showAlert(editName ? t('key_updated') : t('key_created'), 'success');
+        closeKeyModal();
+        loadKeys();
+    } else {
+        showAlert(res.error || 'Failed to save key', 'error');
+    }
+};
+
+async function deleteKey(name) {
+    if (!confirm(t('confirm_delete_key'))) return;
+    const res = await apiCall(`/api/keys/${name}`, 'DELETE');
+    if (res.success) {
+        showAlert(t('key_deleted'), 'success');
+        loadKeys();
+    } else {
+        showAlert(res.error || 'Failed to delete key', 'error');
+    }
+}
+
+function copyKey(key) {
+    navigator.clipboard.writeText(key).then(() => {
+        showAlert(t('copied'), 'success');
+    });
+}
+
+async function loadKeys() {
+    const res = await apiCall('/api/keys', 'GET');
+    const tbody = document.getElementById('keys-tbody');
+    const noKeys = document.getElementById('no-keys');
+    
+    if (!res.keys || res.keys.length === 0) {
+        tbody.innerHTML = '';
+        noKeys.style.display = 'block';
+        return;
+    }
+    
+    noKeys.style.display = 'none';
+    tbody.innerHTML = res.keys.map(k => `
+        <tr>
+            <td>${k.name}</td>
+            <td>
+                <span class="key-value">${k.key}</span>
+                <button class="btn btn-sm" onclick="copyKey('${k.key_full}')" style="margin-left: 5px; padding: 2px 6px;">${t('copy')}</button>
+            </td>
+            <td><span class="status ${k.access_mode === 'whitelist' ? 'status-ok' : ''}">${t(k.access_mode)}</span></td>
+            <td><span class="status ${k.enabled ? 'status-ok' : 'status-err'}">${k.enabled ? t('enabled') : 'Disabled'}</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick='openKeyModal(${JSON.stringify(k)})'>${t('edit')}</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteKey('${k.name}')">${t('delete')}</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Initialize
 loadProxyStatus();
+loadKeys();
 </script>
 {% endblock %}

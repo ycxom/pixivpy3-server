@@ -4,6 +4,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixiv API Manager</title>
+    <script>
+    // i18n 国际化支持
+    const i18n = {
+        en: {
+            title: "Pixiv API Manager",
+            login: "Login",
+            logout: "Logout",
+            auth_token: "Auth Token",
+            enter_token: "Enter your auth token",
+            invalid_token: "Invalid token",
+            total_accounts: "Total Accounts",
+            active: "Active",
+            total_requests: "Total Requests",
+            proxy_settings: "Proxy Settings",
+            http_proxy: "HTTP/HTTPS Proxy",
+            enable: "Enable",
+            save_apply: "Save & Apply",
+            proxy_enabled: "✓ Proxy enabled",
+            proxy_disabled: "○ Proxy disabled",
+            account_pool: "Account Pool",
+            name: "Name",
+            status: "Status",
+            requests: "Requests",
+            last_request: "Last Request",
+            actions: "Actions",
+            refresh: "Refresh",
+            remove: "Remove",
+            add_account: "+ Add Account",
+            account_name: "Account Name (optional)",
+            auth_method: "Auth Method",
+            refresh_token: "Refresh Token",
+            pixiv_login: "Pixiv Login (GPPT)",
+            add: "Add",
+            cancel: "Cancel",
+            login_with_pixiv: "Login with Pixiv",
+            api_keys: "API Keys",
+            add_key: "+ Add Key",
+            key_name: "Key Name",
+            key_value: "Key Value",
+            access_mode: "Access Mode",
+            whitelist: "Whitelist",
+            blacklist: "Blacklist",
+            allowed_endpoints: "Allowed Endpoints",
+            denied_endpoints: "Denied Endpoints",
+            enabled: "Enabled",
+            edit: "Edit",
+            delete: "Delete",
+            save: "Save",
+            confirm_delete_key: "Are you sure you want to delete this key?",
+            confirm_delete_account: "Remove account",
+            key_created: "API Key created successfully",
+            key_updated: "API Key updated successfully",
+            key_deleted: "API Key deleted successfully",
+            copy: "Copy",
+            copied: "Copied!",
+            select_endpoints: "Select endpoints to allow/deny",
+            no_keys: "No API keys configured",
+            create_first_key: "Create your first API key to get started"
+        },
+        zh: {
+            title: "Pixiv API 管理器",
+            login: "登录",
+            logout: "退出",
+            auth_token: "认证令牌",
+            enter_token: "请输入认证令牌",
+            invalid_token: "令牌无效",
+            total_accounts: "账号总数",
+            active: "活跃",
+            total_requests: "请求总数",
+            proxy_settings: "代理设置",
+            http_proxy: "HTTP/HTTPS 代理",
+            enable: "启用",
+            save_apply: "保存并应用",
+            proxy_enabled: "✓ 代理已启用",
+            proxy_disabled: "○ 代理已禁用",
+            account_pool: "账号池",
+            name: "名称",
+            status: "状态",
+            requests: "请求数",
+            last_request: "最后请求",
+            actions: "操作",
+            refresh: "刷新",
+            remove: "移除",
+            add_account: "+ 添加账号",
+            account_name: "账号名称（可选）",
+            auth_method: "认证方式",
+            refresh_token: "刷新令牌",
+            pixiv_login: "Pixiv 登录 (GPPT)",
+            add: "添加",
+            cancel: "取消",
+            login_with_pixiv: "使用 Pixiv 登录",
+            api_keys: "API 密钥",
+            add_key: "+ 添加密钥",
+            key_name: "密钥名称",
+            key_value: "密钥值",
+            access_mode: "访问模式",
+            whitelist: "白名单",
+            blacklist: "黑名单",
+            allowed_endpoints: "允许的端点",
+            denied_endpoints: "禁止的端点",
+            enabled: "已启用",
+            edit: "编辑",
+            delete: "删除",
+            save: "保存",
+            confirm_delete_key: "确定要删除此密钥吗？",
+            confirm_delete_account: "移除账号",
+            key_created: "API 密钥创建成功",
+            key_updated: "API 密钥更新成功",
+            key_deleted: "API 密钥删除成功",
+            copy: "复制",
+            copied: "已复制！",
+            select_endpoints: "选择要允许/禁止的端点",
+            no_keys: "暂无 API 密钥",
+            create_first_key: "创建您的第一个 API 密钥以开始使用"
+        }
+    };
+
+    // 获取当前语言
+    function getLang() {
+        return localStorage.getItem('lang') || 'en';
+    }
+
+    // 设置语言
+    function setLang(lang) {
+        localStorage.setItem('lang', lang);
+        applyTranslations();
+    }
+
+    // 切换语言
+    function toggleLang() {
+        const current = getLang();
+        setLang(current === 'en' ? 'zh' : 'en');
+    }
+
+    // 获取翻译文本
+    function t(key) {
+        const lang = getLang();
+        return i18n[lang][key] || i18n['en'][key] || key;
+    }
+
+    // 应用翻译到页面
+    function applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                el.placeholder = t(key);
+            } else {
+                el.textContent = t(key);
+            }
+        });
+        // 更新语言切换按钮
+        const langBtn = document.getElementById('lang-btn');
+        if (langBtn) {
+            langBtn.textContent = getLang() === 'en' ? '中文' : 'EN';
+        }
+    }
+
+    // 页面加载时应用翻译
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }

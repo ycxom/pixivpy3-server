@@ -1,6 +1,6 @@
 from flask import request, jsonify, send_file
 from app.routes import api_bp
-from app.auth import require_auth
+from app.auth import require_api_key
 from app.pool import pool
 import tempfile
 import os
@@ -13,7 +13,7 @@ def get_api():
     return account.api, account.name
 
 @api_bp.route("/illust/<int:illust_id>", methods=["GET"])
-@require_auth
+@require_api_key
 def get_illust(illust_id):
     """获取插画详情"""
     api, name = get_api()
@@ -27,7 +27,7 @@ def get_illust(illust_id):
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route("/search", methods=["GET"])
-@require_auth
+@require_api_key
 def search_illust():
     """搜索插画"""
     api, name = get_api()
@@ -44,7 +44,7 @@ def search_illust():
 
 
 @api_bp.route("/ranking", methods=["GET"])
-@require_auth
+@require_api_key
 def get_ranking():
     """获取排行榜"""
     api, name = get_api()
@@ -60,7 +60,7 @@ def get_ranking():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route("/recommended", methods=["GET"])
-@require_auth
+@require_api_key
 def get_recommended():
     """获取推荐插画"""
     api, name = get_api()
@@ -75,7 +75,7 @@ def get_recommended():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route("/download", methods=["GET"])
-@require_auth
+@require_api_key
 def download_image():
     """下载图片"""
     api, _ = get_api()

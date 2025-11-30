@@ -1,6 +1,21 @@
+# Virtual environment
 venv/
-tokens/
-.vscode
-__pycache__/
 
+# Token cache
+tokens/
+
+# IDE
+.vscode/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Config (contains sensitive data)
 config.yaml
+
+# Kiro
+.kiro/

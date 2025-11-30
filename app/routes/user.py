@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from app.routes import api_bp
-from app.auth import require_auth
+from app.auth import require_api_key
 from app.pool import pool
 
 def get_api():
@@ -11,7 +11,7 @@ def get_api():
     return account.api, account.name
 
 @api_bp.route("/user/<int:user_id>", methods=["GET"])
-@require_auth
+@require_api_key
 def get_user_detail(user_id):
     """获取用户详情"""
     api, name = get_api()
@@ -25,7 +25,7 @@ def get_user_detail(user_id):
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route("/user/<int:user_id>/illusts", methods=["GET"])
-@require_auth
+@require_api_key
 def get_user_illusts(user_id):
     """获取用户作品"""
     api, name = get_api()

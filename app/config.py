@@ -79,5 +79,55 @@ class Config:
         self._data["proxy"]["http"] = http_proxy
         self._data["proxy"]["https"] = https_proxy or http_proxy
         self.save()
+    
+    @property
+    def api_keys(self):
+        """获取 API Keys 列表"""
+        return self._data.get("api_keys", []) or []
+    
+    def set_api_keys(self, keys: list):
+        """设置 API Keys 列表并保存"""
+        self._data["api_keys"] = keys
+        self.save()
+    
+    def add_api_key(self, key_data: dict):
+        """添加 API Key"""
+        if "api_keys" not in self._data or self._data["api_keys"] is None:
+            self._data["api_keys"] = []
+        
+        # 检查名称是否已存在
+        for k in self._data["api_keys"]:
+            if k.get("name") == key_data.get("name"):
+                return False
+        
+        self._data["api_keys"].append(key_data)
+        self.save()
+        return True
+    
+    def update_api_key(self, name: str, key_data: dict):
+        """更新 API Key"""
+        if "api_keys" not in self._data or self._data["api_keys"] is None:
+            return False
+        
+        for i, k in enumerate(self._data["api_keys"]):
+            if k.get("name") == name:
+                self._data["api_keys"][i] = key_data
+                self.save()
+                return True
+        return False
+    
+    def remove_api_key(self, name: str):
+        """删除 API Key"""
+        if "api_keys" not in self._data or self._data["api_keys"] is None:
+            return False
+        
+        original_len = len(self._data["api_keys"])
+        self._data["api_keys"] = [
+            k for k in self._data["api_keys"] if k.get("name") != name
+        ]
+        if len(self._data["api_keys"]) < original_len:
+            self.save()
+            return True
+        return False
 
 config = Config()
