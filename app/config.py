@@ -1,5 +1,7 @@
 import yaml
 import os
+import shutil
+
 
 class Config:
     _instance = None
@@ -8,8 +10,22 @@ class Config:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._config_path = os.getenv("CONFIG_PATH", "config.yaml")
+            cls._instance._ensure_config_exists()
             cls._instance._load()
         return cls._instance
+    
+    def _ensure_config_exists(self):
+        """确保配置文件存在，不存在则从模板复制"""
+        if not os.path.exists(self._config_path):
+            example_path = "config.yaml.example"
+            if os.path.exists(example_path):
+                shutil.copy(example_path, self._config_path)
+                print(f"[Config] Created {self._config_path} from {example_path}")
+            else:
+                raise FileNotFoundError(
+                    f"Config file not found: {self._config_path}\n"
+                    f"Please copy config.yaml.example to config.yaml"
+                )
     
     def _load(self):
         with open(self._config_path, "r", encoding="utf-8") as f:

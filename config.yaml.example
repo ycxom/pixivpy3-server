@@ -2,16 +2,23 @@ server:
   host: 0.0.0.0
   port: 6523
   debug: false
+
 auth:
-  token: Adm1n_PixivPY3
+  token: your_admin_token_here
+
+api_keys: []
+
 load_balance:
   strategy: round_robin
+
 gppt:
   enabled: true
   token_cache_dir: ./tokens
   headless: true
+
 proxy:
-  enabled: true
-  http: http://127.0.0.1:10808
-  https: http://127.0.0.1:10808
-pixiv_accounts:[]
+  enabled: false
+  http: http://127.0.0.1:7890
+  https: http://127.0.0.1:7890
+
+pixiv_accounts: []
