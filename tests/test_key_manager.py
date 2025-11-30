@@ -82,8 +82,9 @@ class TestKeyManager:
     
     def test_create_key(self, manager):
         """测试创建 Key"""
-        key = manager.create_key("test_key")
+        key, error = manager.create_key("test_key")
         assert key is not None
+        assert error == ""
         assert key.name == "test_key"
         assert key.key.startswith("pk_")
         assert len(manager.list_keys()) == 1
@@ -91,18 +92,20 @@ class TestKeyManager:
     def test_create_duplicate_key(self, manager):
         """测试创建重复名称的 Key"""
         manager.create_key("test_key")
-        result = manager.create_key("test_key")
+        result, error = manager.create_key("test_key")
         assert result is None
+        assert "already exists" in error
         assert len(manager.list_keys()) == 1
     
     def test_create_key_invalid_mode(self, manager):
         """测试创建无效访问模式的 Key"""
-        result = manager.create_key("test", access_mode="invalid")
+        result, error = manager.create_key("test", access_mode="invalid")
         assert result is None
+        assert "Invalid access mode" in error
     
     def test_get_key(self, manager):
         """测试获取 Key"""
-        created = manager.create_key("test_key")
+        created, _ = manager.create_key("test_key")
         found = manager.get_key(created.key)
         assert found is not None
         assert found.name == "test_key"
@@ -128,15 +131,17 @@ class TestKeyManager:
     def test_update_key(self, manager):
         """测试更新 Key"""
         manager.create_key("test_key", access_mode="blacklist")
-        result = manager.update_key("test_key", access_mode="whitelist")
+        result, error = manager.update_key("test_key", access_mode="whitelist")
         assert result is True
+        assert error == ""
         key = manager.get_key_by_name("test_key")
         assert key.access_mode == "whitelist"
     
     def test_update_key_endpoints(self, manager):
         """测试更新 Key 端点列表"""
         manager.create_key("test_key")
-        manager.update_key("test_key", allowed_endpoints=["/api/search"])
+        result, _ = manager.update_key("test_key", allowed_endpoints=["/api/search"])
+        assert result is True
         key = manager.get_key_by_name("test_key")
         assert key.allowed_endpoints == ["/api/search"]
 
@@ -151,11 +156,12 @@ class TestAccessControl:
         km = KeyManager()
         km._keys = []
         km._save_to_config = lambda: None
+        km._reload_from_config = lambda: None  # Mock 避免从配置重新加载
         return km
     
     def test_whitelist_allowed(self, manager):
         """测试白名单模式 - 允许的端点"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="whitelist",
             allowed_endpoints=["/api/search", "/api/ranking"]
@@ -166,7 +172,7 @@ class TestAccessControl:
     
     def test_whitelist_denied(self, manager):
         """测试白名单模式 - 不允许的端点"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="whitelist",
             allowed_endpoints=["/api/search"]
@@ -177,7 +183,7 @@ class TestAccessControl:
     
     def test_blacklist_allowed(self, manager):
         """测试黑名单模式 - 允许的端点"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="blacklist",
             denied_endpoints=["/api/download"]
@@ -187,7 +193,7 @@ class TestAccessControl:
     
     def test_blacklist_denied(self, manager):
         """测试黑名单模式 - 禁止的端点"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="blacklist",
             denied_endpoints=["/api/download"]
@@ -203,7 +209,7 @@ class TestAccessControl:
     
     def test_disabled_key(self, manager):
         """测试禁用的 Key"""
-        key = manager.create_key("test")
+        key, _ = manager.create_key("test")
         manager.update_key("test", enabled=False)
         allowed, error = manager.check_access(key.key, "/api/search")
         assert allowed is False
@@ -211,7 +217,7 @@ class TestAccessControl:
     
     def test_wildcard_endpoint(self, manager):
         """测试通配符端点匹配"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="blacklist",
             denied_endpoints=["/api/proxy/*"]
@@ -221,7 +227,7 @@ class TestAccessControl:
     
     def test_normalize_endpoint(self, manager):
         """测试端点规范化"""
-        key = manager.create_key(
+        key, _ = manager.create_key(
             "test",
             access_mode="whitelist",
             allowed_endpoints=["/api/illust/<id>"]

@@ -57,6 +57,7 @@
                     <th data-i18n="key_name">Key Name</th>
                     <th data-i18n="key_value">Key Value</th>
                     <th data-i18n="access_mode">Access Mode</th>
+                    <th data-i18n="pool_restriction">Pool</th>
                     <th data-i18n="status">Status</th>
                     <th data-i18n="actions">Actions</th>
                 </tr>
@@ -163,6 +164,19 @@
                 <div class="form-group">
                     <label data-i18n="denied_endpoints">Denied Endpoints</label>
                     <div id="denied-endpoints" class="endpoint-checkboxes"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="pool_restriction">Account Pool Restriction</label>
+                <select id="key-pool-mode" onchange="togglePoolAccountsField()">
+                    <option value="all" data-i18n="all_accounts">All Accounts</option>
+                    <option value="specific" data-i18n="specific_accounts">Specific Accounts</option>
+                </select>
+            </div>
+            <div id="pool-accounts-fields" style="display: none;">
+                <div class="form-group">
+                    <label data-i18n="allowed_accounts">Allowed Accounts</label>
+                    <div id="allowed-accounts" class="endpoint-checkboxes"></div>
                 </div>
             </div>
             <div class="actions">
@@ -331,9 +345,44 @@ function toggleEndpointFields() {
     document.getElementById('blacklist-fields').style.display = mode === 'blacklist' ? 'block' : 'none';
 }
 
-function openKeyModal(editKey = null) {
+function togglePoolAccountsField() {
+    const mode = document.getElementById('key-pool-mode').value;
+    document.getElementById('pool-accounts-fields').style.display = mode === 'specific' ? 'block' : 'none';
+}
+
+let availableAccounts = [];
+
+async function loadAvailableAccounts() {
+    const res = await apiCall('/api/pool/accounts', 'GET');
+    availableAccounts = res.accounts || [];
+}
+
+function renderAccountCheckboxes(selected = []) {
+    const container = document.getElementById('allowed-accounts');
+    if (availableAccounts.length === 0) {
+        container.innerHTML = '<p style="color: #888; font-size: 12px;">No accounts available</p>';
+        return;
+    }
+    container.innerHTML = availableAccounts.map(acc => `
+        <label>
+            <input type="checkbox" value="${acc}" ${selected.includes(acc) ? 'checked' : ''}>
+            ${escapeHtml(acc)}
+        </label>
+    `).join('');
+}
+
+function getSelectedAccounts() {
+    const container = document.getElementById('allowed-accounts');
+    return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+}
+
+async function openKeyModal(editKey = null) {
+    await loadAvailableAccounts();
     renderEndpointCheckboxes('allowed-endpoints', editKey?.allowed_endpoints || []);
     renderEndpointCheckboxes('denied-endpoints', editKey?.denied_endpoints || []);
+    
+    const poolRestriction = editKey?.pool_restriction || { mode: 'all', allowed_accounts: [] };
+    renderAccountCheckboxes(poolRestriction.allowed_accounts || []);
     
     if (editKey) {
         document.getElementById('key-modal-title').textContent = t('edit_key');
@@ -341,15 +390,18 @@ function openKeyModal(editKey = null) {
         document.getElementById('key-name').value = editKey.name;
         document.getElementById('key-name').disabled = true;
         document.getElementById('key-access-mode').value = editKey.access_mode;
+        document.getElementById('key-pool-mode').value = poolRestriction.mode;
     } else {
         document.getElementById('key-modal-title').textContent = t('add_key');
         document.getElementById('key-edit-name').value = '';
         document.getElementById('key-name').value = '';
         document.getElementById('key-name').disabled = false;
         document.getElementById('key-access-mode').value = 'blacklist';
+        document.getElementById('key-pool-mode').value = 'all';
     }
     
     toggleEndpointFields();
+    togglePoolAccountsField();
     document.getElementById('keyModal').classList.add('active');
 }
 
@@ -365,12 +417,22 @@ document.getElementById('keyForm').onsubmit = async (e) => {
     const accessMode = document.getElementById('key-access-mode').value;
     const allowedEndpoints = getSelectedEndpoints('allowed-endpoints');
     const deniedEndpoints = getSelectedEndpoints('denied-endpoints');
+    const poolMode = document.getElementById('key-pool-mode').value;
+    const allowedAccounts = getSelectedAccounts();
+    
+    // 验证 specific 模式必须选择账号
+    if (poolMode === 'specific' && allowedAccounts.length === 0) {
+        showAlert('Please select at least one account for specific mode', 'error');
+        return;
+    }
     
     const data = {
         name,
         access_mode: accessMode,
         allowed_endpoints: allowedEndpoints,
-        denied_endpoints: deniedEndpoints
+        denied_endpoints: deniedEndpoints,
+        pool_mode: poolMode,
+        allowed_accounts: allowedAccounts
     };
     
     let res;
@@ -406,6 +468,14 @@ function copyKey(key) {
     });
 }
 
+function formatPoolRestriction(poolRestriction) {
+    if (!poolRestriction || poolRestriction.mode === 'all') {
+        return '<span class="status status-ok">All</span>';
+    }
+    const count = poolRestriction.allowed_accounts?.length || 0;
+    return `<span class="status">${count} account${count !== 1 ? 's' : ''}</span>`;
+}
+
 async function loadKeys() {
     const res = await apiCall('/api/keys', 'GET');
     const tbody = document.getElementById('keys-tbody');
@@ -420,15 +490,16 @@ async function loadKeys() {
     noKeys.style.display = 'none';
     tbody.innerHTML = res.keys.map(k => `
         <tr>
-            <td>${k.name}</td>
+            <td>${escapeHtml(k.name)}</td>
             <td>
                 <span class="key-value">${k.key}</span>
                 <button class="btn btn-sm" onclick="copyKey('${k.key_full}')" style="margin-left: 5px; padding: 2px 6px;">${t('copy')}</button>
             </td>
             <td><span class="status ${k.access_mode === 'whitelist' ? 'status-ok' : ''}">${t(k.access_mode)}</span></td>
+            <td>${formatPoolRestriction(k.pool_restriction)}</td>
             <td><span class="status ${k.enabled ? 'status-ok' : 'status-err'}">${k.enabled ? t('enabled') : 'Disabled'}</span></td>
             <td>
-                <button class="btn btn-primary btn-sm" onclick='openKeyModal(${JSON.stringify(k)})'>${t('edit')}</button>
+                <button class="btn btn-primary btn-sm" onclick='openKeyModal(${JSON.stringify(k).replace(/'/g, "&#39;")})'>${t('edit')}</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteKey('${k.name}')">${t('delete')}</button>
             </td>
         </tr>

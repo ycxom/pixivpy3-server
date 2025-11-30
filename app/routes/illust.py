@@ -1,13 +1,30 @@
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, g
 from app.routes import api_bp
 from app.auth import require_api_key
 from app.pool import pool
+from app.key_manager import key_manager
 import tempfile
 import os
 
 def get_api():
+    """根据 API Key 的池限制获取账号"""
     strategy = request.args.get("lb")
-    account = pool.get_account(strategy)
+    
+    # 获取当前请求的 API Key 值
+    key_value = getattr(g, 'api_key_value', None)
+    
+    if key_value:
+        # 获取该 Key 的池限制配置
+        pool_mode, allowed_accounts = key_manager.get_allowed_accounts(key_value)
+        if pool_mode:
+            account = pool.get_account_for_key(pool_mode, allowed_accounts, strategy)
+        else:
+            # Key 不存在，使用默认行为
+            account = pool.get_account(strategy)
+    else:
+        # 没有 API Key 上下文，使用默认行为
+        account = pool.get_account(strategy)
+    
     if not account:
         return None, None
     return account.api, account.name
@@ -81,10 +98,27 @@ def download_image():
     if not url:
         return jsonify({"error": "url required"}), 400
     try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            api.download(url, path=tmpdir)
-            filename = os.path.basename(url)
-            filepath = os.path.join(tmpdir, filename)
-            return send_file(filepath, mimetype="image/jpeg")
+        # 创建临时目录，不使用 with 语句以避免文件锁定问题
+        tmpdir = tempfile.mkdtemp()
+        api.download(url, path=tmpdir)
+        filename = os.path.basename(url)
+        filepath = os.path.join(tmpdir, filename)
+        
+        # 读取文件内容到内存，然后删除临时文件
+        with open(filepath, 'rb') as f:
+            file_data = f.read()
+        
+        # 清理临时文件
+        import shutil
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        
+        # 从内存返回文件
+        from io import BytesIO
+        return send_file(
+            BytesIO(file_data),
+            mimetype="image/jpeg",
+            as_attachment=False,
+            download_name=filename
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

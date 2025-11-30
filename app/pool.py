@@ -199,6 +199,13 @@ class AccountPool:
         with self.lock:
             self.accounts = [a for a in self.accounts if a.name != name]
         config.remove_account(name)
+        # 从所有 API Key 的 allowed_accounts 中移除该账号
+        from app.key_manager import key_manager
+        key_manager.remove_account_from_all_keys(name)
+
+    def get_available_account_names(self):
+        """获取所有可用账号名称列表"""
+        return [a.name for a in self.accounts if a.authenticated]
     
     def get_account(self, strategy=None):
         """获取账号（支持多种策略）"""
@@ -210,6 +217,46 @@ class AccountPool:
         if strategy == "least_used":
             return self._get_least_used()
         return self._get_round_robin()
+
+    def get_account_for_key(self, pool_mode, allowed_accounts, strategy=None):
+        """
+        根据 API Key 的池限制获取账号
+        pool_mode: "all" 或 "specific"
+        allowed_accounts: 允许的账号名称列表（仅 specific 模式有效）
+        strategy: 负载均衡策略
+        """
+        # 获取可用账号列表
+        if pool_mode == "all":
+            available = [a for a in self.accounts if a.authenticated]
+        else:
+            # specific 模式：仅使用允许的账号
+            available = [a for a in self.accounts if a.authenticated and a.name in allowed_accounts]
+        
+        if not available:
+            return None
+        
+        strategy = strategy or config.lb_strategy
+        
+        if strategy == "least_used":
+            return self._get_least_used_from(available)
+        return self._get_round_robin_from(available)
+
+    def _get_round_robin_from(self, accounts):
+        """从指定账号列表中轮询获取"""
+        with self.lock:
+            account = accounts[self.index % len(accounts)]
+            self.index += 1
+        account.check_and_refresh()
+        account.record_request()
+        return account
+
+    def _get_least_used_from(self, accounts):
+        """从指定账号列表中获取最少使用的"""
+        with self.lock:
+            account = min(accounts, key=lambda a: a.request_count)
+        account.check_and_refresh()
+        account.record_request()
+        return account
     
     def _get_round_robin(self):
         with self.lock:

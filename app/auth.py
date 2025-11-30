@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, g
 from app.config import config
 
 
@@ -36,6 +36,9 @@ def require_api_key(f):
             if error in ("Invalid API key", "API key is disabled"):
                 return jsonify({"error": error}), 401
             return jsonify({"error": error}), 403
+        
+        # 将 API Key 值存储到请求上下文，供后续使用
+        g.api_key_value = key_value
         
         return f(*args, **kwargs)
     return decorated
