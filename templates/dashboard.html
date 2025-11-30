@@ -74,7 +74,6 @@
     </div>
 </div>
 
-
 <!-- Add Account Modal -->
 <div class="modal" id="addModal">
     <div class="modal-content">
@@ -136,12 +135,19 @@ function apiCall(url, method, data) {
 }
 
 function openAddModal() {
+    // 确保每次打开模态框时都重置为默认状态
+    document.getElementById('auth-method').value = 'token';
+    toggleAuthFields();
     document.getElementById('addModal').classList.add('active');
 }
 
 function closeAddModal() {
     document.getElementById('addModal').classList.remove('active');
     document.getElementById('addForm').reset();
+    // 重置认证方法为默认值
+    document.getElementById('auth-method').value = 'token';
+    // 确保显示正确的字段
+    toggleAuthFields();
 }
 
 function toggleAuthFields() {
@@ -229,7 +235,14 @@ async function saveProxy() {
     }
 }
 
-// Load proxy status on page load
-loadProxyStatus();
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 确保认证方法默认为 token
+    document.getElementById('auth-method').value = 'token';
+    toggleAuthFields();
+    
+    // 加载代理状态
+    loadProxyStatus();
+});
 </script>
 {% endblock %}
